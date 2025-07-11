@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from 'axios';
-
+import { ChessPiece } from './chessPiece';
 const API_URL = "http://127.0.0.1:8000";
 
 interface GameState {
@@ -8,6 +8,18 @@ interface GameState {
 }
 
 const RenderChessBoard = () => {
+  
+  // Event handlers
+  const handleDragStart = (e: React.DragEvent, pieceId: string) => {
+    e.dataTransfer.setData("PieceId", pieceId);
+  }
+  const handleDragOver = (e:React.DragEvent) => {
+    e.preventDefault();
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+  }
+  // Render the chessboard grid here
     return (
       <div className="page-wrapper">
       <div className="board-container" style={{position:"relative"}}>
@@ -50,20 +62,14 @@ const RenderChessBoard = () => {
         >
           {/* Optional: render pieces, move highlights, etc. */}
           {row === 0 && (
-            <span
-              style={{
-          display: "inline-block",
-          width: 12,
-          height: 12,
-          borderRadius: "50%",
-          background: "red",
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)"
-              }}
-            />
-          )}
+  <span className="piece-marker">
+    <span className="piece-text"
+    style ={{
+      color: "red",
+    }}
+    >馬</span>
+  </span>
+)}
         </div>
       ))
     )}
