@@ -40,3 +40,64 @@
 .read-the-docs {
   color: #888;
 }
+/* Full-screen container to center content */
+.page-wrapper {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center;     /* center vertically */
+
+  position: relative;
+  
+}
+.board-container {
+  position: relative;
+  width: 540px;  /* 9 columns × 60px */
+  height: 600px; /* 10 rows × 60px */
+}
+.xiangqi-board {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(9, 60px);
+  background-color: #f5e0b7;
+  width: fit-content;
+  margin: 30px auto;
+  position: relative;
+}
+
+.cell {
+  width: 60px;
+  height: 60px;
+  box-sizing: border-box;
+  border: 1px solid black;
+  position: relative;
+}
+
+.river {
+  background-color: #d0eafc;
+}
+
+.palace {
+  background-color: #f8e5d3;
+  border: 2px dashed #8b0000;
+}
+.front-layer{
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(9, 60px);
+  grid-template-rows: repeat(10, 60px);
+  width: 540px;  /* 9 * 60 */
+  height: 600px; /* 10 * 60 */
+  pointer-events: none; /* allow interaction to pass through unless overridden */
+  z-index: 10;
+
+}
+.invisible-cell {
+  width: 60px;
+  height: 60px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
