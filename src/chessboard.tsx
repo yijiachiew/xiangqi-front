@@ -35,17 +35,15 @@ const RenderChessBoard = () => {
     fetchStates();
   }, []);
 
-  // Convert index to algebraic notation (e.g., 0,0 -> a0)
-  // Xiangqi board is 9x10 (files a-i, ranks 0-9)
   function indexToSquare(x: number, y: number): string {
-    const file = String.fromCharCode(97 + x); // a, b, c...
-    const rank = y.toString();
-    return file + rank;
+    // Return coordinates as string "xy" (integers without spaces)
+    return `${x}${y}`;
   }
 
   async function fetchStates() {
     try {
       const res = await axios.get(`${API_URL}/board`);
+      console.log("Connection to backend successful. Board state fetched:", res.data);
       const newState: GameState = res.data;
       updateGameState(newState);
     } catch (err) {
@@ -57,11 +55,13 @@ const RenderChessBoard = () => {
     // Map backend pieces to frontend pieces
     const newPieces: ChessPiece[] = newState.pieces.map((p) => ({
       id: p.id,
-      x: p.x,
-      y: p.y,
+      x: p.y, // Swap: backend y -> frontend x
+      y: p.x, // Swap: backend x -> frontend y
       type: p.type as PieceType,
       player: p.player as Player,
     }));
+    
+    console.log("Updated pieces coordinates:", newPieces.map(p => ({ id: p.id, x: p.x, y: p.y })));
 
     setPieces(newPieces);
     setPlayerTurn(newState.playerTurn as Player);
@@ -74,8 +74,13 @@ const RenderChessBoard = () => {
 
   async function getMoves(piece: ChessPiece) {
     try {
-      const res = await axios.get(`${API_URL}/legal_moves/${piece.x}/${piece.y}`);
-      const moves: {x: number, y: number}[] = res.data;
+      // Swap coordinates when sending to backend: frontend x -> backend y, frontend y -> backend x
+      const res = await axios.get(`${API_URL}/legal_moves/${piece.y}/${piece.x}`);
+      // Swap coordinates when receiving from backend: backend y -> frontend x, backend x -> frontend y
+      const moves: {x: number, y: number}[] = res.data.map((m: {x: number, y: number}) => ({
+          x: m.y,
+          y: m.x
+      }));
       setAvailableMoves(moves);
     } catch (err) {
       console.error("Error fetching moves:", err);
@@ -89,8 +94,12 @@ const RenderChessBoard = () => {
       const res = await axios.post(`${API_URL}/move`, payload);
       updateGameState(res.data);
       setAvailableMoves([]);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error posting move:", err);
+      if (err.response) {
+          console.error("Backend error response:", err.response.data);
+          alert(`Move failed: ${JSON.stringify(err.response.data)}`);
+      }
     }
   }
 
@@ -149,13 +158,9 @@ const RenderChessBoard = () => {
         return;
     }
 
-    const sourceSquare = indexToSquare(piece.x, piece.y);
-    const targetSquare = indexToSquare(x, y);
-    // Assuming backend takes "source+target" string like "a0a1" or "0,0-0,1"
-    // Trying "a0a1" format first as it is common (UCI). 
-    // If backend uses "x1,y1,x2,y2", we might need to change this.
-    // Given Controller just takes a string and calls board.playTurn(move), 
-    // and chess-fe used indexToSquare logic, we stick to that.
+    const sourceSquare = indexToSquare(piece.y, piece.x);
+    const targetSquare = indexToSquare(y, x);
+    // Sends "y1x1y2x2" (e.g. "0010")
     postStates(`${sourceSquare}${targetSquare}`);
   }
 
