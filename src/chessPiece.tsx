@@ -48,7 +48,7 @@ function RenderPiece({ id, type, player, onDragStart }: ChessPieceProps){
             className={`chess-piece ${type} ${player}`}
             draggable
             onDragStart={(e) => onDragStart(e, id)}
-            style={{ position: 'absolute'}}
+            style={{ position: 'absolute', zIndex: 10}}
         >
         <span className="piece-marker">
             <span className="piece-text"

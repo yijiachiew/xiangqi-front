@@ -70,6 +70,7 @@ const RenderChessBoard = () => {
     setIsCheck(newState.isCheck);
     setIsGameOver(newState.isGameOver);
     setGameResult(newState.result);
+    console.log("Game state updated:", newState);
   }
 
   async function getMoves(piece: ChessPiece) {
@@ -118,11 +119,13 @@ const RenderChessBoard = () => {
       const res = await axios.post(`${API_URL}/undo`);
       updateGameState(res.data);
       setAvailableMoves([]);
+      console.log("Undo move successful");
+      console.log("Undo move data:", res.data);
     } catch (err) {
       console.error("Error undoing move:", err);
     }
   }
-
+  
   // Event handlers
   const handleDragStart = (e: React.DragEvent, pieceId: string) => {
     // console.log("Dragging piece:", pieceId);
@@ -132,7 +135,7 @@ const RenderChessBoard = () => {
     // Only allow moving current player's pieces
     if (piece.player !== playerTurn) {
         // e.preventDefault(); // Prevents dragging, but might need to be done onDragStart logic in RenderPiece
-        return;
+      return;
     }
 
     e.dataTransfer.setData("PieceId", pieceId);
@@ -155,7 +158,7 @@ const RenderChessBoard = () => {
     if (!isLegal) {
         console.log("Illegal move");
         setAvailableMoves([]);
-        return;
+      return;
     }
 
     const sourceSquare = indexToSquare(piece.y, piece.x);
@@ -228,19 +231,9 @@ const RenderChessBoard = () => {
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, col, row)}
         >
-        {isAvailableMove && <div 
-            style={{
-                width: "15px",
-                height: "15px",
-                backgroundColor: "rgba(0, 255, 0, 0.5)",
-                borderRadius: "50%",
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                pointerEvents: "none"
-            }}
-        ></div>}
+        {isAvailableMove && (
+          <div className={`move-indicator ${piece ? "capture" : "empty"}`}></div>
+        )}
         {piece && (<RenderPiece
             id={piece.id}
             type={piece.type}

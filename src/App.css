@@ -125,3 +125,28 @@
   font-size: 24px;
   margin-top: -2px; /* Adjust as needed */
 }
+
+/* Available Move Indicator */
+.move-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+/* Default green dot for empty squares */
+.move-indicator.empty {
+  width: 20px;
+  height: 20px;
+  background-color: rgba(0, 255, 0, 0.5);
+}
+
+/* Red circle for capture moves */
+.move-indicator.capture {
+  width: 55px;
+  height: 55px;
+  background-color: rgba(255, 0, 0, 0.5);
+}
