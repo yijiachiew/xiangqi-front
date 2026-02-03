@@ -1,130 +1,35 @@
-import React, { useEffect } from 'react';
-import axios from 'axios';
-import RenderPiece, { ChessPiece, Player, PieceType } from './chessPiece';
+import React from 'react';
+import RenderPiece, { ChessPiece, Player } from './chessPiece';
 
-const API_URL = "http://localhost:8080/api/game";
-
-interface GameState {
-    pieces: {
-      id: string;
-      x: number;
-      y: number;
-      type: string;
-      player: string;
-    }[];
-    playerTurn: string;
+interface RenderChessBoardProps {
+    pieces: ChessPiece[];
+    availableMoves: {x: number, y: number}[];
+    playerTurn: Player;
+    isCheckmate: boolean;
     isGameOver: boolean;
     isCheck: boolean;
-    isCheckmate: boolean;
     isStalemate: boolean;
-    result: string | null;
+    onGetMoves: (piece: ChessPiece) => void;
+    onClearMoves: () => void;
+    onMove: (source: {x: number, y: number}, target: {x: number, y: number}) => void;
+    onReset: () => void;
+    onUndo: () => void;
 }
 
-const RenderChessBoard = () => {
-  // State handlers
-  const [pieces, setPieces] = React.useState<ChessPiece[]>([]); 
-  const [availableMoves, setAvailableMoves] = React.useState<{x: number, y: number}[]>([]); 
-  const [playerTurn, setPlayerTurn] = React.useState<Player>('red'); 
-  const [isCheckmate, setIsCheckmate] = React.useState<boolean>(false); 
-  const [isGameOver, setIsGameOver] = React.useState<boolean>(false); 
-  const [isCheck, setIsCheck] = React.useState<boolean>(false);
-  const [isStalemate, setIsStalemate] = React.useState<boolean>(false);
-  const [gameResult, setGameResult] = React.useState<string | null>(null);
-
-  useEffect(() => {
-    fetchStates();
-  }, []);
-
-  function indexToSquare(x: number, y: number): string {
-    // Return coordinates as string "xy" (integers without spaces)
-    return `${x}${y}`;
-  }
-
-  async function fetchStates() {
-    try {
-      const res = await axios.get(`${API_URL}/board`);
-      console.log("Connection to backend successful. Board state fetched:", res.data);
-      const newState: GameState = res.data;
-      updateGameState(newState);
-    } catch (err) {
-      console.error("Error fetching state:", err);
-    }
-  }
-
-  function updateGameState(newState: GameState) {
-    // Map backend pieces to frontend pieces
-    const newPieces: ChessPiece[] = newState.pieces.map((p) => ({
-      id: p.id,
-      x: p.y, // Swap: backend y -> frontend x
-      y: p.x, // Swap: backend x -> frontend y
-      type: p.type as PieceType,
-      player: p.player as Player,
-    }));
-    
-    console.log("Updated pieces coordinates:", newPieces.map(p => ({ id: p.id, x: p.x, y: p.y })));
-
-    setPieces(newPieces);
-    setPlayerTurn(newState.playerTurn as Player);
-    setIsCheckmate(newState.isCheckmate);
-    setIsStalemate(newState.isStalemate);
-    setIsCheck(newState.isCheck);
-    setIsGameOver(newState.isGameOver);
-    setGameResult(newState.result);
-    console.log("Game state updated:", newState);
-  }
-
-  async function getMoves(piece: ChessPiece) {
-    try {
-      // Swap coordinates when sending to backend: frontend x -> backend y, frontend y -> backend x
-      const res = await axios.get(`${API_URL}/legal_moves/${piece.y}/${piece.x}`);
-      // Swap coordinates when receiving from backend: backend y -> frontend x, backend x -> frontend y
-      const moves: {x: number, y: number}[] = res.data.map((m: {x: number, y: number}) => ({
-          x: m.y,
-          y: m.x
-      }));
-      setAvailableMoves(moves);
-    } catch (err) {
-      console.error("Error fetching moves:", err);
-      setAvailableMoves([]);
-    }
-  }
-
-  async function postStates(moveString: string) {
-    try {
-      const payload = { payload: moveString }; // Wrapper for backend @RequestBody GameRequest
-      const res = await axios.post(`${API_URL}/move`, payload);
-      updateGameState(res.data);
-      setAvailableMoves([]);
-    } catch (err: any) {
-      console.error("Error posting move:", err);
-      if (err.response) {
-          console.error("Backend error response:", err.response.data);
-          alert(`Move failed: ${JSON.stringify(err.response.data)}`);
-      }
-    }
-  }
-
-  async function resetBoard() {
-    try {
-      const res = await axios.post(`${API_URL}/reset`);
-      updateGameState(res.data);
-      setAvailableMoves([]);
-    } catch (err) {
-      console.error("Error resetting board:", err);
-    }
-  }
-
-  async function undoMove() {
-    try {
-      const res = await axios.post(`${API_URL}/undo`);
-      updateGameState(res.data);
-      setAvailableMoves([]);
-      console.log("Undo move successful");
-      console.log("Undo move data:", res.data);
-    } catch (err) {
-      console.error("Error undoing move:", err);
-    }
-  }
+const RenderChessBoard: React.FC<RenderChessBoardProps> = ({
+    pieces,
+    availableMoves,
+    playerTurn,
+    isCheckmate,
+    isGameOver,
+    isCheck,
+    isStalemate,
+    onGetMoves,
+    onClearMoves,
+    onMove,
+    onReset,
+    onUndo
+}) => {
   
   // Event handlers
   const handleDragStart = (e: React.DragEvent, pieceId: string) => {
@@ -139,7 +44,7 @@ const RenderChessBoard = () => {
     }
 
     e.dataTransfer.setData("PieceId", pieceId);
-    getMoves(piece);
+    onGetMoves(piece);
   }
 
   const handleDragOver = (e:React.DragEvent) => {
@@ -157,14 +62,11 @@ const RenderChessBoard = () => {
     const isLegal = availableMoves.some(m => m.x === x && m.y === y);
     if (!isLegal) {
         console.log("Illegal move");
-        setAvailableMoves([]);
+        onClearMoves();
       return;
     }
 
-    const sourceSquare = indexToSquare(piece.y, piece.x);
-    const targetSquare = indexToSquare(y, x);
-    // Sends "y1x1y2x2" (e.g. "0010")
-    postStates(`${sourceSquare}${targetSquare}`);
+    onMove({x: piece.x, y: piece.y}, {x, y});
   }
 
   // Render the chessboard grid here
@@ -247,8 +149,8 @@ const RenderChessBoard = () => {
   </div>
       </div>
       <div className="controls">
-          <button onClick={resetBoard}>Reset Game</button>
-          <button onClick={undoMove}>Undo Move</button>
+          <button onClick={onReset}>Reset Game</button>
+          <button onClick={onUndo}>Undo Move</button>
       </div>
       </div>
       )
